@@ -46,10 +46,16 @@ class ApiClient {
     return IOClient(httpClient);
   }
 
+  // 版本号必须 >= 3.1.5：服务端对控制类接口（dev/start、dev/end）有版本门禁，
+  // 用 3.1.4 会直接返回 {"code":-1,"msg":"请升级最新版APP"}。
+  // 实测 3.1.5 ~ 9.9.9 都能过门禁，且 master / dev/home / dev/status 的返回完全一致
+  // （说明服务端只校验下限、不校验上限）。这里取 6.0.0 留足余量，防止官方提高门槛后再次失效。
+  static const String kAppVersion = '6.0.0';
+
   Map<String, String> get _baseHeaders => {
         'ApplicationType': '1,1',
-        'VersionCode': '3.1.4',
-        'user-agent': 'Android_ilife798_3.1.4',
+        'VersionCode': kAppVersion,
+        'user-agent': 'Android_ilife798_$kAppVersion',
       };
 
   Map<String, String> get _authHeaders {
@@ -392,18 +398,30 @@ class ApiResponse {
   final int code;
   final dynamic data; // can be Map or List
   final int? time;
+  /// 服务端错误描述。注意：这个接口的错误文案在 `msg` 字段里（不是 message）。
+  final String? msg;
 
-  ApiResponse({required this.code, this.data, this.time});
+  ApiResponse({required this.code, this.data, this.time, this.msg});
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
+    final rawMsg = json['msg'] ?? json['message'];
     return ApiResponse(
       code: json['code'] as int? ?? -1,
       data: json['data'],
       time: json['time'] as int?,
+      msg: rawMsg is String ? rawMsg : null,
     );
   }
 
   bool get isSuccess => code == 0;
+
+  /// 给用户看的错误描述：服务端 msg 优先，缺失时兜底成 code。
+  /// 之前只显示 code，导致所有失败都变成没头没尾的「code=-1」。
+  String get errorText {
+    final m = msg;
+    if (m != null && m.isNotEmpty) return m;
+    return 'code=$code';
+  }
 
   /// Convenience: data as Map (for Map-typed responses).
   Map<String, dynamic>? get dataMap => data is Map<String, dynamic> ? data : null;
