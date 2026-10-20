@@ -42,6 +42,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::KEYSTORE_BASE64 未配置，本次构建回落到 debug 签名（每次签名不同，装新包前需先卸载旧包）"
+            exit 0
+          fi
           python3 -c "import base64, os; open('android/cloudora-release.jks','wb').write(base64.b64decode(os.environ['KEYSTORE_BASE64']))"
           cat > android/key.properties << PROPERTIES
           storePassword=$KEYSTORE_PASSWORD
