@@ -60,7 +60,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       final homeResp = await api.getDeviceHome(widget.deviceId);
       if (!homeResp.isSuccess) {
         setState(() {
-          _error = '加载设备数据失败 (code: ${homeResp.code})';
+          _error = '加载设备数据失败：${homeResp.errorText}';
           _loading = false;
         });
         return;
@@ -68,7 +68,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
       final statusResp = await api.getDeviceStatus(widget.deviceId);
       if (!statusResp.isSuccess) {
         setState(() {
-          _error = '加载状态失败 (code: ${statusResp.code})';
+          _error = '加载状态失败：${statusResp.errorText}';
           _loading = false;
         });
         return;
@@ -167,7 +167,7 @@ class _DeviceScreenState extends State<DeviceScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('启动失败 (code: ${resp.code})')),
+          SnackBar(content: Text('启动失败：${resp.errorText}'), duration: const Duration(seconds: 6)),
         );
       }
     } catch (e) {
@@ -195,7 +195,10 @@ class _DeviceScreenState extends State<DeviceScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('设备已关闭')),
+          SnackBar(
+            content: Text('停水失败：${resp.errorText}'),
+            duration: const Duration(seconds: 6),
+          ),
         );
       }
       Future.delayed(const Duration(seconds: 2), () {
